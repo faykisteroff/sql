@@ -1,133 +1,120 @@
-/* ASSIGNMENT 2 */
-/* SECTION 2 */
+--#### SELECT
+--1. Write a query that returns everything in the customer table.
 
--- COALESCE
-/* 1. Our favourite manager wants a detailed long list of products, but is afraid of tables! 
-We tell them, no problem! We can produce a list with all of the appropriate details. 
+SELECT * from customer
 
-Using the following syntax you create our super cool and not at all needy manager a list:
+--2. Write a query that displays all of the columns and 10 rows from the customer table, sorted by customer_last_name, then customer_first_ name.
 
-SELECT 
-product_name || ', ' || product_size|| ' (' || product_qty_type || ')'
-FROM product
-
-But wait! The product table has some bad data (a few NULL values). 
-Find the NULLs and then using COALESCE, replace the NULL with a 
-blank for the first problem, and 'unit' for the second problem. 
-
-HINT: keep the syntax the same, but edited the correct components with the string. 
-The `||` values concatenate the columns into strings. 
-Edit the appropriate columns -- you're making two edits -- and the NULL rows will be fixed. 
-All the other rows will remain the same.) */
+SELECT * from customer
+order by
+customer_last_name,
+customer_first_name
+limit 10
 
 
+--#### WHERE
+--1. Write a query that returns all customer purchases of product IDs 4 and 9.
 
---Windowed Functions
-/* 1. Write a query that selects from the customer_purchases table and numbers each customer’s  
-visits to the farmer’s market (labeling each market date with a different number). 
-Each customer’s first visit is labeled 1, second visit is labeled 2, etc. 
+SELECT * from customer_purchases
+WHERE product_id = 4 or 9
 
-You can either display all rows in the customer_purchases table, with the counter changing on
-each new market date for each customer, or select only the unique market dates per customer 
-(without purchase details) and number those visits. 
-HINT: One of these approaches uses ROW_NUMBER() and one uses DENSE_RANK(). */
+--2. Write a query that returns all customer purchases and a new calculated column 'price' (quantity * cost_to_customer_per_qty), filtered by vendor IDs between 8 and 10 (inclusive) using either:
+	--1.  two conditions using AND
+	--2.  one condition using BETWEEN
 
+SELECT *,
+	quantity * cost_to_customer_per_qty as price
 
-
-/* 2. Reverse the numbering of the query from a part so each customer’s most recent visit is labeled 1, 
-then write another query that uses this one as a subquery (or temp table) and filters the results to 
-only the customer’s most recent visit. */
-
+from customer_purchases
+where vendor_id between 8 and 10
 
 
-/* 3. Using a COUNT() window function, include a value along with each row of the 
-customer_purchases table that indicates how many different times that customer has purchased that product_id. */
+--#### CASE
+--1. Products can be sold by the individual unit or by bulk measures like lbs. or oz. Using the product table, write a query that outputs the `product_id` and `product_name` columns and add a column called `prod_qty_type_condensed` that displays the word “unit” if the `product_qty_type` is “unit,” and otherwise displays the word “bulk.”
+
+select 
+    product_id, 
+    product_name,
+    case
+        when product_qty_type = 'unit' then 'unit'
+        else 'bulk'
+    end as prod_qty_type_condensed
+from product
+
+--2. We want to flag all of the different types of pepper products that are sold at the market. Add a column to the previous query called `pepper_flag` that outputs a 1 if the product_name contains the word “pepper” (regardless of capitalization), and otherwise outputs 0.
+
+select 
+    product_id, 
+    product_name,
+    case
+        when product_qty_type = 'unit' then 'unit'
+        else 'bulk'
+    end as prod_qty_type_condensed,
+	case
+		when product_name like '%pepper%' then 1
+		else 0
+	end as pepper_flag
+from product;
 
 
+--#### JOIN
+--1. Write a query that `INNER JOIN`s the `vendor` table to the `vendor_booth_assignments` table on the `vendor_id` field they both have in common, and sorts the result by `vendor_name`, then `market_date`.
 
--- String manipulations
-/* 1. Some product names in the product table have descriptions like "Jar" or "Organic". 
-These are separated from the product name with a hyphen. 
-Create a column using SUBSTR (and a couple of other commands) that captures these, but is otherwise NULL. 
-Remove any trailing or leading whitespaces. Don't just use a case statement for each product! 
-
-| product_name               | description |
-|----------------------------|-------------|
-| Habanero Peppers - Organic | Organic     |
-
-Hint: you might need to use INSTR(product_name,'-') to find the hyphens. INSTR will help split the column. */
-
-
-
-/* 2. Filter the query to show any product_size value that contain a number with REGEXP. */
+select 
+    v.vendor_id,
+    v.vendor_name,
+    vba.market_date,
+    vba.booth_number
+from vendor v
+inner join vendor_booth_assignments vba
+    on v.vendor_id = vba.vendor_id
+order by v.vendor_name, vba.market_date;
 
 
+--#### AGGREGATE
+--1. Write a query that determines how many times each vendor has rented a booth at the farmer’s market by counting the vendor booth assignments per `vendor_id`.
 
--- UNION
-/* 1. Using a UNION, write a query that displays the market dates with the highest and lowest total sales.
+select vendor_id,
+	count(*) as booths_rented
+from vendor_booth_assignments
+group by vendor_id
 
-HINT: There are a possibly a few ways to do this query, but if you're struggling, try the following: 
-1) Create a CTE/Temp Table to find sales values grouped dates; 
-2) Create another CTE/Temp table with a rank windowed function on the previous query to create 
-"best day" and "worst day"; 
-3) Query the second temp table twice, once for the best day, once for the worst day, 
-with a UNION binding them. */
+--2. The Farmer’s Market Customer Appreciation Committee wants to give a bumper sticker to everyone who has ever spent more than $2000 at the market. Write a query that generates a list of customers for them to give stickers to, sorted by last name, then first name.
 
-
-
-
-/* SECTION 3 */
-
--- Cross Join
-/*1. Suppose every vendor in the `vendor_inventory` table had 5 of each of their products to sell to **every** 
-customer on record. How much money would each vendor make per product? 
-Show this by vendor_name and product name, rather than using the IDs.
-
-HINT: Be sure you select only relevant columns and rows. 
-Remember, CROSS JOIN will explode your table rows, so CROSS JOIN should likely be a subquery. 
-Think a bit about the row counts: how many distinct vendors, product names are there (x)?
-How many customers are there (y). 
-Before your final group by you should have the product of those two queries (x*y).  */
-
-
-
--- INSERT
-/*1.  Create a new table "product_units". 
-This table will contain only products where the `product_qty_type = 'unit'`. 
-It should use all of the columns from the product table, as well as a new column for the `CURRENT_TIMESTAMP`.  
-Name the timestamp column `snapshot_timestamp`. */
+select
+    c.customer_id,
+    c.customer_first_name,
+    c.customer_last_name,
+    sum(cp.quantity * cp.cost_to_customer_per_qty) as total_cost
+from customer_purchases cp
+inner join customer c
+    on cp.customer_id = c.customer_id
+group by
+    c.customer_id,
+    c.customer_first_name,
+    c.customer_last_name
+having
+    sum(cp.quantity * cp.cost_to_customer_per_qty) > 2000
+order by
+    c.customer_last_name,
+    c.customer_first_name
 
 
+--#### Temp Table
+--1. Insert the original vendor table into a temp.new_vendor and then add a 10th vendor: Thomass Superfood Store, a Fresh Focused store, owned by Thomas Rosenthal
+   
+create table temp.new_vendor as
 
-/*2. Using `INSERT`, add a new row to the product_units table (with an updated timestamp). 
-This can be any product you desire (e.g. add another record for Apple Pie). */
+select
+vendor_id,
+vendor_name,
+vendor_type,
+vendor_owner_first_name,
+vendor_owner_last_name
 
+from vendor;
 
+insert into temp.new_vendor
+values(10,'Thomass Superfood Store','a Fresh Focused store','Thomas','Rosenthal')
 
--- DELETE
-/* 1. Delete the older record for the whatever product you added. 
-
-HINT: If you don't specify a WHERE clause, you are going to have a bad time.*/
-
-
-
--- UPDATE
-/* 1.We want to add the current_quantity to the product_units table. 
-First, add a new column, current_quantity to the table using the following syntax.
-
-ALTER TABLE product_units
-ADD current_quantity INT;
-
-Then, using UPDATE, change the current_quantity equal to the last quantity value from the vendor_inventory details.
-
-HINT: This one is pretty hard. 
-First, determine how to get the "last" quantity per product. 
-Second, coalesce null values to 0 (if you don't have null values, figure out how to rearrange your query so you do.) 
-Third, SET current_quantity = (...your select statement...), remembering that WHERE can only accommodate one column. 
-Finally, make sure you have a WHERE statement to update the right row, 
-	you'll need to use product_units.product_id to refer to the correct row within the product_units table. 
-When you have all of these components, you can run the update statement. */
-
-
-
-
+select * from temp.new_vendor
